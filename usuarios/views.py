@@ -4,7 +4,8 @@ from django.contrib.messages import constants
 from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib import auth
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import user_passes_test, login_required
+from django.http import Http404
 
 def cadastro(request):
     if request.method == 'GET':
@@ -50,19 +51,25 @@ def login(request):
         messages.add_message(request, constants.ERROR, 'Username ou senha inválidos.')
         return redirect('login')
 
-
+@login_required
+def logout(request):
+    auth.logout(request)
+    messages.add_message(request, constants.SUCCESS, 'Logout realizado com sucesso.')
+    return redirect('login')
 
 @user_passes_test(lambda u: u.is_superuser)
 def permissoes(request):
-    users = User.objects.filter(is_superuser = False)
+    users = User.objects.filter(is_superuser=False)
     return render(request, 'permissoes.html', {'users': users})
-
 
 from rolepermissions.roles import assign_role
 
+@user_passes_test(lambda u: u.is_superuser)
 def tornar_gerente(request, id):
-    #if not request.user.is_superuser:
-    #    raise Http404()
-    user = User.objects.get(id=id)
-    assign_role(user, 'gerente')
+    try:
+        user = User.objects.get(id=id)
+        assign_role(user, 'gerente')
+        messages.add_message(request, constants.SUCCESS, f'Usuário {user.username} agora é gerente.')
+    except User.DoesNotExist:
+        messages.add_message(request, constants.ERROR, 'Usuário não encontrado.')
     return redirect('permissoes')

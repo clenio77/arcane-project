@@ -193,4 +193,40 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 venv/
-de
+
+# Arcane AI specific
+media/
+staticfiles/
+logs/
+data/faiss_index/
+*.index
+backups/
+*.sql
+*.dump
+
+# SSL certificates
+ssl/
+*.pem
+*.key
+*.crt
+
+# AI/ML models
+*.pkl
+*.joblib
+*.h5
+*.pb
+
+# Secrets and keys
+secrets.json
+service-account.json
+*.p12
+
+# Heroku
+.heroku/
+
+# Docker
+.dockerignore
+
+# Monitoring data
+prometheus_data/
+grafana_data/

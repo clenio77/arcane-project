@@ -1,0 +1,119 @@
+{
+  "name": "Arcane AI - Enterprise AI Platform",
+  "description": "Plataforma de IA empresarial com agentes especializados, busca inteligente e personalização avançada",
+  "repository": "https://github.com/clenio77/arcane-project",
+  "logo": "https://raw.githubusercontent.com/clenio77/arcane-project/main/static/img/arcane.png",
+  "keywords": [
+    "ai",
+    "artificial-intelligence",
+    "chatbot",
+    "enterprise",
+    "saas",
+    "django",
+    "openai",
+    "machine-learning"
+  ],
+  "website": "https://arcane-ai.herokuapp.com",
+  "success_url": "/",
+  "stack": "heroku-22",
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    },
+    "worker": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:essential-0"
+    },
+    {
+      "plan": "heroku-redis:mini"
+    },
+    {
+      "plan": "sendgrid:starter"
+    }
+  ],
+  "env": {
+    "DEBUG": {
+      "description": "Debug mode (should be False in production)",
+      "value": "False"
+    },
+    "SECRET_KEY": {
+      "description": "Django secret key",
+      "generator": "secret"
+    },
+    "DJANGO_SETTINGS_MODULE": {
+      "description": "Django settings module",
+      "value": "core.settings_heroku"
+    },
+    "OPENAI_API_KEY": {
+      "description": "OpenAI API key for AI functionality",
+      "required": true
+    },
+    "OPENAI_MODEL": {
+      "description": "OpenAI model to use",
+      "value": "gpt-4-turbo-preview"
+    },
+    "STRIPE_PUBLIC_KEY": {
+      "description": "Stripe public key for payments",
+      "required": false
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Stripe secret key for payments",
+      "required": false
+    },
+    "STRIPE_WEBHOOK_SECRET": {
+      "description": "Stripe webhook secret",
+      "required": false
+    },
+    "EMAIL_HOST_USER": {
+      "description": "Email host user (SendGrid username)",
+      "required": false
+    },
+    "EMAIL_HOST_PASSWORD": {
+      "description": "Email host password (SendGrid password)",
+      "required": false
+    },
+    "DEFAULT_FROM_EMAIL": {
+      "description": "Default from email address",
+      "value": "noreply@arcane-ai.herokuapp.com"
+    },
+    "DOMAIN_NAME": {
+      "description": "Domain name for the application",
+      "value": "arcane-ai.herokuapp.com"
+    },
+    "SENTRY_DSN": {
+      "description": "Sentry DSN for error monitoring",
+      "required": false
+    },
+    "FAISS_DIMENSION": {
+      "description": "FAISS vector dimension",
+      "value": "1536"
+    }
+  },
+  "scripts": {
+    "postdeploy": "python manage.py migrate --settings=core.settings_heroku && python manage.py collectstatic --noinput --settings=core.settings_heroku && python manage.py shell --settings=core.settings_heroku -c \"from billing.models import Plan; Plan.objects.get_or_create(name='Starter', plan_type='starter', price_monthly=29, price_yearly=290, max_queries_month=1000, max_users=5, max_storage_gb=10, max_agents=1); Plan.objects.get_or_create(name='Professional', plan_type='professional', price_monthly=99, price_yearly=990, max_queries_month=10000, max_users=25, max_storage_gb=100, max_agents=3, api_access=True); Plan.objects.get_or_create(name='Enterprise', plan_type='enterprise', price_monthly=499, price_yearly=4990, max_queries_month=-1, max_users=-1, max_storage_gb=-1, max_agents=-1, api_access=True, priority_support=True, custom_branding=True, advanced_analytics=True, sso_integration=True)\""
+  },
+  "environments": {
+    "test": {
+      "addons": [
+        "heroku-postgresql:essential-0"
+      ],
+      "env": {
+        "DEBUG": "True"
+      },
+      "scripts": {
+        "test": "python manage.py test --settings=core.settings_heroku"
+      }
+    }
+  }
+}

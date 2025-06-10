@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block 'conteudo' %}
+    <main class="bg-gray-50 min-h-screen">
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">📊 Analytics & Inteligência</h1>
+                        <p class="text-gray-600">Métricas avançadas do sistema de IA</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <a href="{% url 'chat_inteligente' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            Voltar ao Chat
+                        </a>
+                        <a href="{% url 'logout' %}" class="text-red-600 hover:text-red-700">Sair</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <!-- Cards de métricas principais -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Qualidade Média -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span class="text-green-600 font-bold">⭐</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Qualidade Média</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ metricas_qualidade.avaliacao_media }}/5</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span>{{ metricas_qualidade.total_feedbacks }} avaliações</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Base de Conhecimento -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span class="text-blue-600 font-bold">📚</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Documentos</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ stats_base.total_documentos }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span>Qualidade: {{ stats_base.qualidade_media|floatformat:1 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suas Conversas -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <span class="text-purple-600 font-bold">💬</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Suas Conversas</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ conversas_usuario }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span>{{ perguntas_usuario }} perguntas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Atividade Recente -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <span class="text-orange-600 font-bold">🔥</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Atividade (7d)</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ atividade_recente }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span>queries processadas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Distribuição de Avaliações -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">📈 Distribuição de Avaliações</h3>
+                    
+                    {% if metricas_qualidade.distribuicao %}
+                        <div class="space-y-3">
+                            {% for nota, count in metricas_qualidade.distribuicao.items %}
+                                <div class="flex items-center">
+                                    <div class="flex items-center w-20">
+                                        {% for i in "12345" %}
+                                            <span class="text-sm {% if forloop.counter <= nota %}text-yellow-500{% else %}text-gray-300{% endif %}">⭐</span>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="flex-1 mx-4">
+                                        <div class="bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: {% if metricas_qualidade.total_feedbacks > 0 %}{{ count|mul:100|div:metricas_qualidade.total_feedbacks }}{% else %}0{% endif %}%"></div>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm text-gray-600 w-8">{{ count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500 text-center py-8">Nenhuma avaliação ainda</p>
+                    {% endif %}
+                </div>
+
+                <!-- Categorias de Perguntas -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">🎯 Categorias de Perguntas</h3>
+                    
+                    {% if distribuicao_categorias %}
+                        <div class="space-y-3">
+                            {% for item in distribuicao_categorias %}
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                                        <span class="text-sm font-medium text-gray-700">{{ item.categoria|title }}</span>
+                                    </div>
+                                    <span class="text-sm text-gray-600">{{ item.count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500 text-center py-8">Nenhuma pergunta categorizada</p>
+                    {% endif %}
+                </div>
+
+                <!-- Tipos de Fonte -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">📁 Tipos de Fonte</h3>
+                    
+                    {% if stats_base.tipos_fonte %}
+                        <div class="space-y-3">
+                            {% for tipo, count in stats_base.tipos_fonte.items %}
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                                        <span class="text-sm font-medium text-gray-700">{{ tipo|title }}</span>
+                                    </div>
+                                    <span class="text-sm text-gray-600">{{ count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500 text-center py-8">Nenhum documento processado</p>
+                    {% endif %}
+                </div>
+
+                <!-- Perguntas Populares -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">🔥 Perguntas Populares</h3>
+                    
+                    {% if perguntas_populares %}
+                        <div class="space-y-3">
+                            {% for item in perguntas_populares %}
+                                <div class="border-l-4 border-blue-500 pl-4 py-2">
+                                    <p class="text-sm text-gray-800">{{ item.pergunta_texto|truncatechars:80 }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">{{ item.count }} vez{{ item.count|pluralize:"es" }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500 text-center py-8">Nenhuma pergunta registrada</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Insights e Recomendações -->
+            <div class="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">🧠 Insights Inteligentes</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-2">📊 Análise de Performance</h4>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            {% if metricas_qualidade.avaliacao_media >= 4 %}
+                                <li>✅ Excelente qualidade de respostas ({{ metricas_qualidade.avaliacao_media }}/5)</li>
+                            {% elif metricas_qualidade.avaliacao_media >= 3 %}
+                                <li>⚠️ Qualidade boa, mas pode melhorar ({{ metricas_qualidade.avaliacao_media }}/5)</li>
+                            {% else %}
+                                <li>❌ Qualidade precisa de atenção ({{ metricas_qualidade.avaliacao_media }}/5)</li>
+                            {% endif %}
+                            
+                            {% if stats_base.total_documentos < 10 %}
+                                <li>📚 Considere adicionar mais documentos para melhor contexto</li>
+                            {% else %}
+                                <li>✅ Base de conhecimento bem estabelecida</li>
+                            {% endif %}
+                            
+                            {% if atividade_recente > 50 %}
+                                <li>🔥 Alta atividade detectada - sistema bem utilizado</li>
+                            {% elif atividade_recente > 10 %}
+                                <li>📈 Atividade moderada - crescimento constante</li>
+                            {% else %}
+                                <li>💡 Baixa atividade - promova mais o uso do sistema</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-2">🎯 Recomendações</h4>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            {% if metricas_qualidade.total_feedbacks < 10 %}
+                                <li>💬 Incentive usuários a avaliar mais respostas</li>
+                            {% endif %}
+                            
+                            {% if stats_base.qualidade_media < 0.7 %}
+                                <li>📝 Revise e melhore a qualidade dos documentos</li>
+                            {% endif %}
+                            
+                            <li>🔄 Configure treinamentos automáticos regulares</li>
+                            <li>📈 Monitore métricas semanalmente</li>
+                            <li>🎨 Personalize prompts baseado nas categorias mais usadas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações Rápidas -->
+            <div class="mt-8 bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">⚡ Ações Rápidas</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a href="{% url 'treinar_ia' %}" class="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 transition">
+                        <div class="text-blue-600 font-medium">📚 Adicionar Treinamento</div>
+                        <div class="text-sm text-blue-500 mt-1">Expandir base de conhecimento</div>
+                    </a>
+                    
+                    <a href="{% url 'chat_inteligente' %}" class="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-4 transition">
+                        <div class="text-green-600 font-medium">💬 Testar IA</div>
+                        <div class="text-sm text-green-500 mt-1">Fazer perguntas de teste</div>
+                    </a>
+                    
+                    <button onclick="exportarDados()" class="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg p-4 transition text-left">
+                        <div class="text-purple-600 font-medium">📊 Exportar Dados</div>
+                        <div class="text-sm text-purple-500 mt-1">Download de métricas</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function exportarDados() {
+            // Simular exportação de dados
+            const dados = {
+                timestamp: new Date().toISOString(),
+                metricas: {
+                    qualidade_media: {{ metricas_qualidade.avaliacao_media }},
+                    total_documentos: {{ stats_base.total_documentos }},
+                    conversas_usuario: {{ conversas_usuario }},
+                    perguntas_usuario: {{ perguntas_usuario }}
+                },
+                distribuicao_avaliacoes: {{ metricas_qualidade.distribuicao|safe }},
+                tipos_fonte: {{ stats_base.tipos_fonte|safe }}
+            };
+            
+            const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Auto-refresh a cada 5 minutos
+        setTimeout(() => {
+            location.reload();
+        }, 300000);
+    </script>
+{% endblock 'conteudo' %}

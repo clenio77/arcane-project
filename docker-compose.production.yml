@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # Aplicação principal
+  web:
+    build: .
+    image: arcane-ai:latest
+    container_name: arcane-web
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+    depends_on:
+      - db
+      - redis
+    networks:
+      - arcane-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Banco de dados PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: arcane-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    networks:
+      - arcane-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para cache e sessões
+  redis:
+    image: redis:7-alpine
+    container_name: arcane-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - arcane-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Celery Worker para tarefas em background
+  celery:
+    build: .
+    image: arcane-ai:latest
+    container_name: arcane-celery
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: celery -A core worker -l info --concurrency=4
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./media:/app/media
+    depends_on:
+      - db
+      - redis
+    networks:
+      - arcane-network
+
+  # Celery Beat para tarefas agendadas
+  celery-beat:
+    build: .
+    image: arcane-ai:latest
+    container_name: arcane-celery-beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+    networks:
+      - arcane-network
+
+  # NGINX como proxy reverso
+  nginx:
+    image: nginx:alpine
+    container_name: arcane-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites-available:/etc/nginx/sites-available
+      - ./staticfiles:/var/www/static
+      - ./media:/var/www/media
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    networks:
+      - arcane-network
+
+  # Prometheus para métricas
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: arcane-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - arcane-network
+
+  # Grafana para dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: arcane-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - arcane-network
+
+  # Backup automático
+  backup:
+    image: postgres:15-alpine
+    container_name: arcane-backup
+    restart: "no"
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    command: /scripts/backup.sh
+    depends_on:
+      - db
+    networks:
+      - arcane-network
+    profiles:
+      - backup
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  arcane-network:
+    driver: bridge

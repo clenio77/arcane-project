@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)8#je3ngx@qfra68q0mq9b)q8^@h8(s31)p7apr@-!-)x1h$$7'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-)8#je3ngx@qfra68q0mq9b)q8^@h8(s31)p7apr@-!-)x1h$$7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -37,9 +39,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Third party apps
+    'rest_framework',
+    'corsheaders',
+    'django_ratelimit',
+    'django_celery_beat',
+    'django_celery_results',
     'rolepermissions',
+
+    # Local apps
     'usuarios',
     'oraculo',
+    'billing',
 ]
 
 ROLEPERMISSIONS_MODULE = 'core.roles'
@@ -108,9 +120,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = config('LANGUAGE_CODE', default='pt-br')
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = config('TIME_ZONE', default='America/Sao_Paulo')
 
 USE_I18N = True
 
@@ -140,3 +152,16 @@ MESSAGE_TAGS = {
     constants.SUCCESS: 'bg-green-50 text-green-700',
     constants.ERROR: 'bg-red-50 text-red-700'
 }
+
+# OpenAI Configuration
+OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
+OPENAI_MODEL = config('OPENAI_MODEL', default='gpt-3.5-turbo')
+
+# File Upload Settings
+MAX_UPLOAD_SIZE = config('MAX_UPLOAD_SIZE', default=10485760, cast=int)  # 10MB
+ALLOWED_FILE_TYPES = config('ALLOWED_FILE_TYPES', default='pdf,txt,docx', cast=lambda v: [s.strip() for s in v.split(',')])
+
+# Security Settings
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)

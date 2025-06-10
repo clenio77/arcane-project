@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block 'conteudo' %}
+    <main>
+        <header class="relative isolate bg-gradient-to-r from-blue-500 to-purple-600">
+            <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+                <div class="mx-auto flex max-w-2xl items-center justify-between gap-x-8 lg:mx-0 lg:max-w-none">
+                    <div class="flex items-center gap-x-6">
+                        <img src="{% static 'img/arcane.png' %}" alt="" class="w-16 h-16">
+                        <h1>
+                            <div class="text-sm/6 text-blue-100">IA Avançada</div>
+                            <div class="mt-1 text-xl font-bold text-white">Chat Inteligente</div>
+                        </h1>
+                    </div>
+                    <div class="flex items-center gap-x-4 sm:gap-x-6">
+                        <a href="{% url 'treinar_ia' %}" class="text-sm/6 font-semibold text-white hover:text-blue-100">Treinamento</a>
+                        <a href="{% url 'dashboard_analytics' %}" class="text-sm/6 font-semibold text-white hover:text-blue-100">Analytics</a>
+                        <a href="{% url 'logout' %}" class="text-sm/6 font-semibold text-red-200 hover:text-red-100">Sair</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar com conversas -->
+        <div class="flex h-screen bg-gray-50">
+            <div class="w-80 bg-white shadow-lg border-r border-gray-200">
+                <div class="p-4 border-b border-gray-200">
+                    <button id="nova-conversa" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        + Nova Conversa
+                    </button>
+                </div>
+                <div id="lista-conversas" class="overflow-y-auto h-full pb-20">
+                    <!-- Conversas serão carregadas aqui -->
+                </div>
+            </div>
+
+            <!-- Área principal do chat -->
+            <div class="flex-1 flex flex-col">
+                <!-- Cabeçalho da conversa -->
+                <div class="bg-white border-b border-gray-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <h2 id="titulo-conversa" class="text-lg font-semibold text-gray-900">
+                            {{ conversa.titulo }}
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <span id="status-ia" class="text-sm text-gray-500">Pronto</span>
+                            <div id="indicador-qualidade" class="w-3 h-3 bg-green-400 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área de mensagens -->
+                <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <!-- Mensagem de boas-vindas -->
+                    <div class="flex items-start gap-3">
+                        <img class="w-10 h-10 rounded-full" src="{% static 'img/assistente_virtual.png' %}" alt="IA">
+                        <div class="bg-blue-50 rounded-lg p-4 max-w-md">
+                            <p class="text-sm text-gray-800">
+                                Olá! Sou sua IA avançada. Posso analisar suas perguntas, detectar intenções e fornecer respostas contextualizadas. Como posso ajudar?
+                            </p>
+                            <div class="mt-2 text-xs text-gray-500">
+                                🧠 Análise semântica ativa | 📊 Qualidade monitorada
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Histórico será carregado aqui -->
+                    {% for item in historico %}
+                        <div class="flex items-start gap-3 justify-end">
+                            <div class="bg-blue-600 text-white rounded-lg p-4 max-w-md">
+                                <p class="text-sm">{{ item.pergunta }}</p>
+                                <div class="mt-2 text-xs text-blue-200">
+                                    {{ item.categoria }} | Confiança: {{ item.confianca|floatformat:1 }}
+                                </div>
+                            </div>
+                            <img class="w-10 h-10 rounded-full" src="{% static 'img/user.png' %}" alt="Usuário">
+                        </div>
+
+                        {% if item.resposta %}
+                            <div class="flex items-start gap-3">
+                                <img class="w-10 h-10 rounded-full" src="{% static 'img/assistente_virtual.png' %}" alt="IA">
+                                <div class="bg-gray-100 rounded-lg p-4 max-w-2xl">
+                                    <p class="text-sm text-gray-800">{{ item.resposta }}</p>
+                                    <div class="mt-3 flex items-center gap-2">
+                                        <div class="flex gap-1">
+                                            {% for i in "12345" %}
+                                                <button class="w-4 h-4 text-yellow-400 hover:text-yellow-500">⭐</button>
+                                            {% endfor %}
+                                        </div>
+                                        <span class="text-xs text-gray-500">Avaliar resposta</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Sugestões inteligentes -->
+                <div id="sugestoes-container" class="bg-gray-50 border-t border-gray-200 p-4" style="display: none;">
+                    <div class="text-sm text-gray-600 mb-2">💡 Sugestões baseadas no contexto:</div>
+                    <div id="sugestoes-lista" class="flex flex-wrap gap-2">
+                        <!-- Sugestões serão inseridas aqui -->
+                    </div>
+                </div>
+
+                <!-- Área de input -->
+                <div class="bg-white border-t border-gray-200 p-4">
+                    <form id="form-pergunta-inteligente" class="flex items-end gap-3">
+                        <div class="flex-1">
+                            <textarea 
+                                id="pergunta-input" 
+                                placeholder="Digite sua pergunta... (detectarei automaticamente a intenção)"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-3 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                rows="2"
+                            ></textarea>
+                            <div id="analise-preview" class="mt-2 text-xs text-gray-500" style="display: none;">
+                                <!-- Análise em tempo real será mostrada aqui -->
+                            </div>
+                        </div>
+                        <button 
+                            type="submit" 
+                            id="btn-enviar"
+                            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                        >
+                            Enviar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let conversaAtual = {{ conversa.id }};
+        let analisandoPergunta = false;
+
+        // Carregar conversas
+        async function carregarConversas() {
+            try {
+                const response = await fetch('{% url "listar_conversas" %}');
+                const data = await response.json();
+                
+                const container = document.getElementById('lista-conversas');
+                container.innerHTML = '';
+                
+                data.conversas.forEach(conversa => {
+                    const div = document.createElement('div');
+                    div.className = `p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${conversa.ativa ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`;
+                    div.innerHTML = `
+                        <div class="font-medium text-sm text-gray-900">${conversa.titulo}</div>
+                        <div class="text-xs text-gray-500 mt-1">${conversa.total_perguntas} perguntas</div>
+                        ${conversa.ultima_pergunta ? `<div class="text-xs text-gray-400 mt-1">${conversa.ultima_pergunta}</div>` : ''}
+                    `;
+                    div.onclick = () => selecionarConversa(conversa.id);
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar conversas:', error);
+            }
+        }
+
+        // Nova conversa
+        document.getElementById('nova-conversa').addEventListener('click', async () => {
+            try {
+                const response = await fetch('{% url "iniciar_conversa" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                const data = await response.json();
+                conversaAtual = data.conversa_id;
+                document.getElementById('titulo-conversa').textContent = data.titulo;
+                document.getElementById('chat-container').innerHTML = '';
+                carregarConversas();
+            } catch (error) {
+                console.error('Erro ao criar conversa:', error);
+            }
+        });
+
+        // Análise em tempo real da pergunta
+        document.getElementById('pergunta-input').addEventListener('input', debounce(async (e) => {
+            const pergunta = e.target.value.trim();
+            if (pergunta.length < 10) {
+                document.getElementById('analise-preview').style.display = 'none';
+                return;
+            }
+
+            // Simular análise (em produção, faria chamada para API)
+            const preview = document.getElementById('analise-preview');
+            preview.style.display = 'block';
+            preview.innerHTML = `🔍 Analisando: ${pergunta.length} caracteres | Complexidade estimada: ${Math.min(pergunta.length / 100, 1).toFixed(1)}`;
+        }, 500));
+
+        // Enviar pergunta
+        document.getElementById('form-pergunta-inteligente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const perguntaInput = document.getElementById('pergunta-input');
+            const pergunta = perguntaInput.value.trim();
+            
+            if (!pergunta) return;
+
+            // Adicionar pergunta ao chat
+            adicionarMensagem(pergunta, 'usuario');
+            perguntaInput.value = '';
+            document.getElementById('analise-preview').style.display = 'none';
+
+            // Mostrar indicador de processamento
+            const loadingId = adicionarMensagem('🧠 Analisando pergunta e buscando contexto...', 'assistente', true);
+            document.getElementById('status-ia').textContent = 'Processando...';
+
+            try {
+                // Enviar pergunta para análise
+                const response = await fetch('{% url "chat_inteligente" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ 
+                        pergunta: pergunta,
+                        conversa_id: conversaAtual 
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Remover loading
+                document.getElementById(loadingId).remove();
+                
+                // Mostrar análise
+                mostrarAnalise(data.analise);
+                
+                // Mostrar sugestões
+                mostrarSugestoes(data.sugestoes);
+                
+                // Iniciar stream da resposta
+                const respostaId = adicionarMensagem('', 'assistente');
+                await streamResposta(data.prompt, respostaId, data.pergunta_id);
+                
+                document.getElementById('status-ia').textContent = 'Pronto';
+                
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                adicionarMensagem('❌ Erro: ' + error.message, 'assistente');
+                document.getElementById('status-ia').textContent = 'Erro';
+            }
+        });
+
+        function adicionarMensagem(texto, tipo, isLoading = false) {
+            const container = document.getElementById('chat-container');
+            const messageId = 'msg-' + Date.now();
+            
+            const div = document.createElement('div');
+            div.id = messageId;
+            div.className = `flex items-start gap-3 ${tipo === 'usuario' ? 'justify-end' : ''}`;
+            
+            if (tipo === 'usuario') {
+                div.innerHTML = `
+                    <div class="bg-blue-600 text-white rounded-lg p-4 max-w-md">
+                        <p class="text-sm">${texto}</p>
+                    </div>
+                    <img class="w-10 h-10 rounded-full" src="{% static 'img/user.png' %}" alt="Usuário">
+                `;
+            } else {
+                div.innerHTML = `
+                    <img class="w-10 h-10 rounded-full" src="{% static 'img/assistente_virtual.png' %}" alt="IA">
+                    <div class="bg-gray-100 rounded-lg p-4 max-w-2xl">
+                        <p class="text-sm text-gray-800" id="${messageId}-content">${texto}</p>
+                        ${!isLoading ? `
+                            <div class="mt-3 flex items-center gap-2">
+                                <div class="flex gap-1" data-pergunta-id="">
+                                    ${[1,2,3,4,5].map(i => `<button onclick="avaliarResposta(${i}, '${messageId}')" class="w-4 h-4 text-gray-300 hover:text-yellow-500">⭐</button>`).join('')}
+                                </div>
+                                <span class="text-xs text-gray-500">Avaliar resposta</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            
+            return messageId;
+        }
+
+        function mostrarAnalise(analise) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.className = 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm';
+            div.innerHTML = `
+                <div class="font-medium text-blue-800 mb-2">📊 Análise da Pergunta:</div>
+                <div class="grid grid-cols-2 gap-2 text-blue-700">
+                    <div>Intenção: <span class="font-medium">${analise.intencao}</span></div>
+                    <div>Complexidade: <span class="font-medium">${analise.complexidade}</span></div>
+                    <div>Documentos: <span class="font-medium">${analise.documentos_encontrados}</span></div>
+                    <div>Entidades: <span class="font-medium">${analise.entidades.join(', ') || 'Nenhuma'}</span></div>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function mostrarSugestoes(sugestoes) {
+            if (!sugestoes || sugestoes.length === 0) return;
+            
+            const container = document.getElementById('sugestoes-container');
+            const lista = document.getElementById('sugestoes-lista');
+            
+            lista.innerHTML = '';
+            sugestoes.forEach(sugestao => {
+                const button = document.createElement('button');
+                button.className = 'bg-white border border-gray-300 rounded-full px-3 py-1 text-sm hover:bg-gray-50 transition';
+                button.textContent = sugestao;
+                button.onclick = () => {
+                    document.getElementById('pergunta-input').value = sugestao;
+                    container.style.display = 'none';
+                };
+                lista.appendChild(button);
+            });
+            
+            container.style.display = 'block';
+        }
+
+        async function streamResposta(prompt, messageId, perguntaId) {
+            try {
+                const response = await fetch('{% url "stream_response" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ 
+                        pergunta: prompt.split('Pergunta: ')[1]?.split('Resposta:')[0]?.trim() || '',
+                        contexto: prompt.split('Contexto:')[1]?.split('Pergunta:')[0]?.trim() || ''
+                    })
+                });
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                const contentElement = document.getElementById(messageId + '-content');
+                let content = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                
+                                if (data.content) {
+                                    content += data.content;
+                                    contentElement.textContent = content;
+                                    document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+                                }
+                                
+                                if (data.done && data.qualidade) {
+                                    // Atualizar indicador de qualidade
+                                    const indicador = document.getElementById('indicador-qualidade');
+                                    const qualidadeMedia = (data.qualidade.relevancia + data.qualidade.completude) / 2;
+                                    
+                                    if (qualidadeMedia > 0.7) {
+                                        indicador.className = 'w-3 h-3 bg-green-400 rounded-full';
+                                    } else if (qualidadeMedia > 0.5) {
+                                        indicador.className = 'w-3 h-3 bg-yellow-400 rounded-full';
+                                    } else {
+                                        indicador.className = 'w-3 h-3 bg-red-400 rounded-full';
+                                    }
+                                    
+                                    // Adicionar pergunta_id aos botões de avaliação
+                                    const avaliacaoDiv = document.querySelector(`#${messageId} [data-pergunta-id]`);
+                                    if (avaliacaoDiv) {
+                                        avaliacaoDiv.setAttribute('data-pergunta-id', perguntaId);
+                                    }
+                                }
+                            } catch (e) {
+                                // Ignorar linhas malformadas
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                document.getElementById(messageId + '-content').textContent = 'Erro: ' + error.message;
+            }
+        }
+
+        async function avaliarResposta(nota, messageId) {
+            const perguntaId = document.querySelector(`#${messageId} [data-pergunta-id]`).getAttribute('data-pergunta-id');
+            
+            try {
+                await fetch('{% url "avaliar_resposta" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        pergunta_id: perguntaId,
+                        avaliacao: nota
+                    })
+                });
+                
+                // Atualizar visual das estrelas
+                const estrelas = document.querySelectorAll(`#${messageId} button`);
+                estrelas.forEach((estrela, index) => {
+                    if (index < nota) {
+                        estrela.className = 'w-4 h-4 text-yellow-500';
+                    } else {
+                        estrela.className = 'w-4 h-4 text-gray-300';
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Erro ao avaliar resposta:', error);
+            }
+        }
+
+        // Utilitários
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Inicializar
+        carregarConversas();
+    </script>
+{% endblock 'conteudo' %}
