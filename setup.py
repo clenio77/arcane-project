@@ -13,7 +13,7 @@ def setup_project():
     django.setup()
     
     from django.contrib.auth.models import User
-    from rolepermissions.roles import assign_role
+    # from rolepermissions.roles import assign_role  # Disabled for Heroku
     
     print("🚀 Configurando projeto Arcane...")
     
@@ -41,7 +41,9 @@ def setup_project():
             email='gerente@arcane.com',
             password='gerente123'
         )
-        assign_role(gerente_user, 'gerente')
+        # assign_role(gerente_user, 'gerente')  # Disabled for Heroku
+        gerente_user.is_staff = True  # Fallback: make user staff
+        gerente_user.save()
         print(f"✅ Usuário gerente criado: {gerente_user.username}")
     else:
         print("✅ Usuário gerente já existe")

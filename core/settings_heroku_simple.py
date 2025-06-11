@@ -33,12 +33,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third party apps
     'rest_framework',
     'corsheaders',
-    'rolepermissions',
-    
+
     # Local apps
     'usuarios',
     'oraculo',
@@ -280,5 +279,5 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Role permissions
-ROLEPERMISSIONS_MODULE = 'usuarios.roles'
+# Role permissions (disabled for Heroku)
+# ROLEPERMISSIONS_MODULE = 'usuarios.roles'

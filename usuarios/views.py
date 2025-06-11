@@ -62,14 +62,16 @@ def permissoes(request):
     users = User.objects.filter(is_superuser=False)
     return render(request, 'permissoes.html', {'users': users})
 
-from rolepermissions.roles import assign_role
+# from rolepermissions.roles import assign_role
 
 @user_passes_test(lambda u: u.is_superuser)
 def tornar_gerente(request, id):
     try:
         user = User.objects.get(id=id)
-        assign_role(user, 'gerente')
-        messages.add_message(request, constants.SUCCESS, f'Usuário {user.username} agora é gerente.')
+        # assign_role(user, 'gerente')  # Disabled for Heroku
+        user.is_staff = True  # Fallback: make user staff
+        user.save()
+        messages.add_message(request, constants.SUCCESS, f'Usuário {user.username} agora é staff.')
     except User.DoesNotExist:
         messages.add_message(request, constants.ERROR, 'Usuário não encontrado.')
     return redirect('permissoes')
