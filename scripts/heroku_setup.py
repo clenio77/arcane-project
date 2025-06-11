@@ -9,7 +9,7 @@ import sys
 import django
 
 # Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings_production')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings_heroku_simple')
 django.setup()
 
 from django.contrib.auth.models import User
