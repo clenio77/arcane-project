@@ -3,9 +3,15 @@ Configurações específicas para Heroku
 """
 
 import os
-import dj_database_url
 from decouple import config
 from .settings import *
+
+# Importar dj_database_url apenas se disponível
+try:
+    import dj_database_url
+    HAS_DJ_DATABASE_URL = True
+except ImportError:
+    HAS_DJ_DATABASE_URL = False
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -22,13 +28,42 @@ ALLOWED_HOSTS = [
 ]
 
 # Database configuration para Heroku
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='sqlite:///db.sqlite3'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+if HAS_DJ_DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL', default='sqlite:///db.sqlite3'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    # Fallback para desenvolvimento local
+    DATABASE_URL = config('DATABASE_URL', default='sqlite:///db.sqlite3')
+    if DATABASE_URL.startswith('postgres://'):
+        # Parse manual da URL do PostgreSQL
+        import urllib.parse as urlparse
+        url = urlparse.urlparse(DATABASE_URL)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': url.path[1:],
+                'USER': url.username,
+                'PASSWORD': url.password,
+                'HOST': url.hostname,
+                'PORT': url.port,
+                'OPTIONS': {
+                    'sslmode': 'require',
+                },
+            }
+        }
+    else:
+        # SQLite para desenvolvimento
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            }
+        }
 
 # Redis configuration para Heroku
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')

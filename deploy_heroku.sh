@@ -63,7 +63,7 @@ fi
 echo "⚙️ Configurando variáveis de ambiente..."
 
 heroku config:set \
-    DJANGO_SETTINGS_MODULE=core.settings_heroku \
+    DJANGO_SETTINGS_MODULE=core.settings_production \
     DEBUG=False \
     DOMAIN_NAME=$APP_NAME.herokuapp.com \
     DEFAULT_FROM_EMAIL=noreply@$APP_NAME.herokuapp.com \

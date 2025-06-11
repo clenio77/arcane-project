@@ -1,10 +1,10 @@
 """
-Configurações de produção para Arcane AI SaaS
+Configurações de produção para Heroku - Versão Simplificada
 """
 
-from .settings import *
 import os
 from decouple import config
+from .settings import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
